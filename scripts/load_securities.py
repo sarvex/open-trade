@@ -37,16 +37,14 @@ def main():
       password='test')
 
   cursor = conn.cursor()
-  exchanges = {}
   cursor.execute('select name, id from exchange')
-  for m in cursor.fetchall():
-    exchanges[m[0]] = m[1]
+  exchanges = {m[0]: m[1] for m in cursor.fetchall()}
   exchange_id = exchanges.get(opts.exchange)
   if exchange_id is None:
-    print('unknown exchange: ' + opts.exchange)
+    print(f'unknown exchange: {opts.exchange}')
     return
   cursor.execute('select bbgid from security')
-  bbgids = set([r[0] for r in cursor.fetchall()])
+  bbgids = {r[0] for r in cursor.fetchall()}
 
   with open(opts.file) as fh:
     fh.readline()
@@ -64,7 +62,7 @@ def main():
       for i in range(0, len(fields)):
         f = fields[i]
         if not f: continue
-        valid_fields.append(fields[i])
+        valid_fields.append(f)
         values.append(toks[i])
         v = values[-1]
         if not v:
@@ -86,9 +84,11 @@ def main():
             'insert into security (' + ', '.join(valid_fields) + ') values(' +
             ', '.join(['%s'] * len(valid_fields)) + ')', values)
       else:
-        cursor.execute('update security set ' + ', '.join(
-            [f + '=%s' for f in valid_fields]) + ' where bbgid=%s',
-                       values + [bbgid])
+        cursor.execute(
+            'update security set ' +
+            ', '.join([f'{f}=%s' for f in valid_fields]) + ' where bbgid=%s',
+            values + [bbgid],
+        )
   conn.commit()
 
 
